@@ -5,10 +5,20 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// 練習時，一次只打開一種，觀察結果的變化：
-//builder.Services.AddTransient<ICounter, Counter>();
-//builder.Services.AddScoped<ICounter, Counter>();
-builder.Services.AddSingleton<ICounter, Counter>();
+// 【實驗 A：暫時性】
+builder.Services.AddTransient<ICounter, Counter>();
+builder.Services.AddTransient<ISomeService, SomeService>();
+
+// 【實驗 B：範圍性】
+// builder.Services.AddScoped<ICounter, Counter>();
+// builder.Services.AddScoped<ISomeService, SomeService>();
+
+// 【實驗 C：單例性】
+// builder.Services.AddSingleton<ICounter, Counter>();
+// builder.Services.AddSingleton<ISomeService, SomeService>();
+
+// 別忘了註冊控制器支援
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
