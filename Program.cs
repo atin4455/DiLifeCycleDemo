@@ -5,21 +5,28 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// 【實驗 A：暫時性】
-builder.Services.AddTransient<ICounter, Counter>();
-builder.Services.AddTransient<ISomeService, SomeService>();
+//【實驗 A：暫時性】
+//builder.Services.AddTransient<ICounter, Counter>();
+//builder.Services.AddTransient<ISomeService, SomeService>();
 
 // 【實驗 B：範圍性】
 // builder.Services.AddScoped<ICounter, Counter>();
 // builder.Services.AddScoped<ISomeService, SomeService>();
 
 // 【實驗 C：單例性】
-// builder.Services.AddSingleton<ICounter, Counter>();
-// builder.Services.AddSingleton<ISomeService, SomeService>();
+//builder.Services.AddSingleton<ICounter, Counter>();
+//builder.Services.AddSingleton<ISomeService, SomeService>();
+
+// 【實驗 D：Captive Dependency 陷阱】
+// SomeService 是 Singleton，卻注入了 Scoped 的 ICounter。
+// Development 環境預設會做 scope validation，
+// 因此會在 builder.Build() 當下就丟出 InvalidOperationException，
+// 而不用等到實際發送 request。
+builder.Services.AddScoped<ICounter, Counter>();
+builder.Services.AddSingleton<ISomeService, SomeService>();
 
 // 別忘了註冊控制器支援
 builder.Services.AddControllers();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

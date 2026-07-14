@@ -149,7 +149,34 @@ builder.Services.AddSingleton<ISomeService, SomeService>();
 
 ---
 
+### 🧪 測試四：Captive Dependency 陷阱（生命週期誤用）
+
+在 `Program.cs` 中設定：
+```csharp
+// SomeService 是 Singleton，卻注入了 Scoped 的 ICounter
+builder.Services.AddScoped<ICounter, Counter>();
+builder.Services.AddSingleton<ISomeService, SomeService>();
+```
+
+*   **實驗結果：**
+    *   專案**啟動不起來**（`dotnet run` 之後直接失敗），還沒等到任何 HTTP 請求進來就先炸了。
+    *   Console 會看到類似這樣的例外：
+        ```
+        System.AggregateException: Some services are not able to be constructed...
+        InvalidOperationException: Cannot consume scoped service
+        'DiLifeCycleDemo.Services.ICounter' from singleton
+        'DiLifeCycleDemo.Services.ISomeService'.
+        ```
+*   **原因分析：**
+    *   `SomeService` 註冊為 Singleton，代表它在整個應用程式生命週期中只會被建立**一次**，而且是在應用程式一啟動時就把 `ICounter` 這個依賴「鎖」進自己的建構子裡（俗稱 **Captive Dependency，被俘虜的依賴**）。
+    *   但 `ICounter` 是 Scoped，理論上應該「每個 HTTP 請求一個新的」。一旦被 Singleton 抓住不放，它就會被迫變成事實上的 Singleton——**違背了它原本被設計成 Scoped 的初衷**，後續每個請求看到的都會是同一個過期的實例，容易造成資料錯亂或多執行緒共用的競態問題（race condition）。
+    *   ASP.NET Core 在 `Development` 環境下預設會開啟 **Scope Validation**，只要偵測到「長生命週期的服務注入短生命週期的服務」，就會在 `builder.Build()` 當下直接丟出例外讓開發者立刻發現，而不是讓這個地雷留到 Production 環境才爆炸。
+    *   **實務啟示：** 生命週期不是「單獨」決定的，而是要看整條依賴鏈——只要鏈上有任何一個環節的生命週期比自己短，就會出問題。設計服務時要由外而內確認：「我依賴的東西，生命週期會不會比我還短？」
+
+---
+
 ## 🎯 總結與記憶口訣
 1. **Transient**：多子多孫。要一次給一個新的，不與任何人共享。
 2. **Scoped**：同舟共濟。在同一個 HTTP 請求內大家都是生命共同體，用同一個；換請求就換新。
 3. **Singleton**：天長地久。從頭到尾只有一個，全伺服器、全使用者共享，直到伺服器關機為止。
+4. **Captive Dependency**：以大欺小。長輩（Singleton）绑架晚輩（Scoped/Transient），晚輩就再也回不去自己原本的生命週期了——這是 DI 設計中最容易誤踩的陷阱。
