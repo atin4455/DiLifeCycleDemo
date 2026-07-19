@@ -10,8 +10,8 @@ builder.Services.AddControllersWithViews();
 //builder.Services.AddTransient<ISomeService, SomeService>();
 
 // 【實驗 B：範圍性】
-// builder.Services.AddScoped<ICounter, Counter>();
-// builder.Services.AddScoped<ISomeService, SomeService>();
+builder.Services.AddScoped<ICounter, Counter>();
+builder.Services.AddScoped<ISomeService, SomeService>();
 
 // 【實驗 C：單例性】
 //builder.Services.AddSingleton<ICounter, Counter>();
@@ -22,11 +22,8 @@ builder.Services.AddControllersWithViews();
 // Development 環境預設會做 scope validation，
 // 因此會在 builder.Build() 當下就丟出 InvalidOperationException，
 // 而不用等到實際發送 request。
-builder.Services.AddScoped<ICounter, Counter>();
-builder.Services.AddSingleton<ISomeService, SomeService>();
-
-// 別忘了註冊控制器支援
-builder.Services.AddControllers();
+//builder.Services.AddScoped<ICounter, Counter>();
+//builder.Services.AddSingleton<ISomeService, SomeService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
